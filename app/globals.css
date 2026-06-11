@@ -2,7 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Blackbird design tokens (subset) — sourced from the Blackbird design system.
+   Components must use these via the Tailwind theme (tailwind.config.ts), never
+   hand-written hexes. Dark-first: there is no light mode.
+
+   Color tokens are RGB channel triplets so Tailwind opacity modifiers work
+   (bg-primary/15 → rgb(117 91 255 / 0.15)). Use rgb(var(--token)) in raw CSS. */
+:root {
+  /* Core brand */
+  --core-primary: 117 91 255; /* #755bff */
+  --core-primary-dim: 91 60 232; /* #5b3ce8 */
+  --core-primary-bright: 200 191 255; /* #c8bfff */
+  --core-on-primary: 0 0 0;
+
+  /* Semantic */
+  --success: 44 225 152; /* #2ce198 */
+  --failure: 255 84 73; /* #ff5449 */
+  --brand-yellow: 255 240 102; /* #fff066 */
+
+  /* Surfaces — dark ladder */
+  --surface-bg: 20 20 20; /* #141414 */
+  --surface-bg-darker: 11 11 11; /* #0b0b0b */
+  --surface-container-lowest: 7 7 7; /* #070707 */
+  --surface-container-low: 27 27 27; /* #1b1b1b */
+  --surface-container: 34 34 34; /* #222222 */
+  --surface-container-high: 41 41 41; /* #292929 */
+  --surface-container-highest: 52 52 52; /* #343434 */
+
+  /* Text */
+  --on-surface: 252 252 252; /* #fcfcfc */
+  --on-surface-alt: 171 171 171; /* #ababab */
+  --outline: 146 143 153; /* #928f99 */
+
+  /* Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* Selection */
+  --selection-bg: 200 191 255; /* #c8bfff */
+  --selection-fg: 0 0 0;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  color-scheme: dark;
+}
+
 body {
-  background: #0e0e0e;
-  color: #fcfcfc;
+  background: rgb(var(--surface-bg));
+  color: rgb(var(--on-surface));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgb(var(--selection-bg));
+  color: rgb(var(--selection-fg));
 }

@@ -1,39 +1,68 @@
 import type { ReactNode } from "react";
+import { cookies } from "next/headers";
 import { FlynetDiscoveryClient, FlynetError } from "@flynetdev/core";
-import { RestaurantList, type Restaurant } from "@flynetdev/react";
+import type { Restaurant } from "@flynetdev/react";
+import { LoginButton, RestaurantCard } from "../components";
+import { ACCESS_COOKIE } from "../lib/auth";
+import { listRestaurantLocations } from "../lib/locations";
 import { MemberPanel } from "./member-panel";
 
 // The whole starter in one screen:
 //   1. Read restaurants from Flynet Discovery (server-side, with your API key).
-//   2. Optionally light up the member components if you supply a member token.
+//   2. The member section: an ACCESS_TOKEN env var wins if set; otherwise the
+//      OAuth session cookie (set by the sign-in flow); otherwise a sign-in button.
 //
 // Discovery runs HERE, on the server. The API key is read from the environment
 // and never reaches the browser — that is the one security rule that matters.
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ auth_error?: string }>;
+}) {
   const apiKey = process.env.API_KEY;
-  const accessToken = process.env.ACCESS_TOKEN;
+  const { auth_error: authError } = await searchParams;
+  const cookieToken = (await cookies()).get(ACCESS_COOKIE)?.value;
+  const accessToken = process.env.ACCESS_TOKEN || cookieToken;
+  const signedInViaOAuth = !process.env.ACCESS_TOKEN && Boolean(cookieToken);
 
   return (
     <main className="mx-auto max-w-2xl space-y-10 p-10">
       <header>
-        <p className="text-xs uppercase tracking-[0.2em] text-[#755bff]">
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">
           Flynet Starter
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">
           Build on Blackbird
         </h1>
-        <p className="mt-2 text-[#ababab]">
+        <p className="mt-2 text-muted">
           Real restaurant data from the Flynet API, rendered with the SDK.
         </p>
       </header>
 
       {await renderRestaurants(apiKey)}
 
-      {accessToken ? <MemberPanel accessToken={accessToken} /> : <MemberNotice />}
+      {authError ? <AuthErrorNotice error={authError} /> : null}
+
+      {accessToken ? (
+        <>
+          <MemberPanel accessToken={accessToken} />
+          {signedInViaOAuth ? (
+            <a
+              href="/api/auth/logout"
+              className="text-sm text-muted underline underline-offset-4 hover:text-foreground"
+            >
+              Sign out
+            </a>
+          ) : null}
+        </>
+      ) : (
+        <SignInNotice />
+      )}
 
       {/* 👉 Your code goes here.
-          Add a component, a page, or your own logic. The full component catalog
-          and hooks live in @flynetdev/react. */}
+          The branded building blocks live in ./components — RestaurantCard,
+          UserCard, Tag, BBPayButton, LoginButton. The SDK's own catalog and
+          hooks live in @flynetdev/react. */}
     </main>
   );
 }
@@ -41,13 +70,33 @@ export default async function Home() {
 async function renderRestaurants(apiKey: string | undefined): Promise<ReactNode> {
   if (!apiKey) return <SetupNotice />;
   try {
-    const discovery = new FlynetDiscoveryClient({ apiKey });
+    // API_BASE_URL switches environments; unset means the SDK's staging default.
+    const discovery = new FlynetDiscoveryClient({
+      apiKey,
+      serverURL: process.env.API_BASE_URL || undefined,
+    });
     const { restaurants } = await discovery.restaurants.listRestaurants({
       pageSize: 8,
     });
+    // Locations are a separate Discovery resource — fetch them in parallel,
+    // one call per listed restaurant (raw fetch, see lib/locations.ts). A
+    // failed lookup just hides the location line on that card.
+    const locations = await Promise.all(
+      restaurants.map((restaurant) =>
+        listRestaurantLocations(apiKey, restaurant.id).catch(() => []),
+      ),
+    );
     return (
       <Section title="Restaurants">
-        <RestaurantList restaurants={restaurants as Restaurant[]} />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(restaurants as Restaurant[]).map((restaurant, i) => (
+            <RestaurantCard
+              key={restaurant.id}
+              restaurant={restaurant}
+              locations={locations[i]}
+            />
+          ))}
+        </div>
       </Section>
     );
   } catch (error) {
@@ -74,13 +123,29 @@ function SetupNotice() {
   );
 }
 
-function MemberNotice() {
+function SignInNotice() {
   return (
-    <Notice title="Member components (optional)">
-      Set <Code>ACCESS_TOKEN</Code> (a member OAuth token with the{" "}
-      <Code>read:profile</Code> and <Code>read:wallets</Code> scopes) in{" "}
-      <Code>.env.local</Code> to show the member&apos;s wallet and passport. See
-      the README for how to get one.
+    <Notice title="Your Blackbird account">
+      <span className="block">
+        Sign in with Blackbird to see your wallet and passport. The OAuth flow
+        runs server-side with your <Code>CLIENT_ID</Code> /{" "}
+        <Code>CLIENT_SECRET</Code> and keeps the tokens in HttpOnly cookies.
+        Setting <Code>ACCESS_TOKEN</Code> in <Code>.env.local</Code> skips the
+        flow entirely.
+      </span>
+      <span className="mt-4 block">
+        <LoginButton href="/api/auth/login" />
+      </span>
+    </Notice>
+  );
+}
+
+function AuthErrorNotice({ error }: { error: string }) {
+  return (
+    <Notice tone="error" title="Sign-in didn't complete">
+      The OAuth flow failed (<Code>{error}</Code>). Check <Code>CLIENT_ID</Code>,{" "}
+      <Code>CLIENT_SECRET</Code>, and <Code>REDIRECT_URI</Code> in{" "}
+      <Code>.env.local</Code>, then try again.
     </Notice>
   );
 }
@@ -88,7 +153,7 @@ function MemberNotice() {
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xs uppercase tracking-[0.16em] text-[#ababab]">
+      <h2 className="text-xs uppercase tracking-[0.16em] text-muted">
         {title}
       </h2>
       {children}
@@ -109,11 +174,11 @@ function Notice({
     <div
       className={`rounded-2xl border p-5 text-sm leading-relaxed ${
         tone === "error"
-          ? "border-[#ff5449]/40 text-[#ff5449]"
-          : "border-white/10 text-[#ababab]"
+          ? "border-failure/40 text-failure"
+          : "border-white/10 text-muted"
       }`}
     >
-      <p className="font-medium text-[#fcfcfc]">{title}</p>
+      <p className="font-medium text-foreground">{title}</p>
       <p className="mt-1">{children}</p>
     </div>
   );
@@ -121,7 +186,7 @@ function Notice({
 
 function Code({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded bg-white/10 px-1 py-0.5 text-[#fcfcfc]">
+    <code className="rounded bg-white/10 px-1 py-0.5 text-foreground">
       {children}
     </code>
   );

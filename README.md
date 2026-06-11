@@ -30,10 +30,17 @@ crashing — that's expected.
 
 ```
 app/
-  layout.tsx        imports the component theme (@flynetdev/react/styles.css)
-  page.tsx          the whole flow: server-side Discovery + the member section
-  member-panel.tsx  the member components (wallet, passport), client-side
-.env.example        every variable explained
+  layout.tsx              imports the component theme (@flynetdev/react/styles.css)
+  page.tsx                the whole flow: server-side Discovery + the member section
+  member-panel.tsx        the member components (wallet, passport), client-side
+  api/auth/login/         starts the OAuth authorization-code + PKCE flow (SDK FlynetOAuth)
+  callback/               the registered redirect URI; exchanges the code, sets cookies
+  api/auth/logout/        clears the session cookies
+  flynet-proxy/           same-origin proxy for the browser-side member components
+components/               Blackbird-branded building blocks (see below)
+lib/auth.ts               shared OAuth config: scopes, cookie names, FlynetOAuth factory
+middleware.ts             silent refresh: rotates the refresh token when the access token expires
+.env.example              every variable explained
 ```
 
 `page.tsx` reads your API key on the **server** and calls Discovery there, so the
@@ -53,18 +60,63 @@ catalog and hooks (`WalletBadge`, `CheckInFeed`, `RestaurantCard`,
 `NearbyLocations`, `useWallet`, …) are in
 [`@flynetdev/react`](https://www.npmjs.com/package/@flynetdev/react).
 
-## The member section (optional)
+## The component library
 
-The wallet and passport need a member token. Set `ACCESS_TOKEN` in `.env.local`
-to a member OAuth token (scopes `read:profile` + `read:wallets`) and the member
-panel lights up. Without it, that section shows a notice.
+`components/` ships branded building blocks styled with the Blackbird design
+tokens (wired into Tailwind via `tailwind.config.ts` + `app/globals.css` —
+use the semantic classes like `bg-surface-low` and `text-muted`, never raw
+hexes):
 
-In a real app the token comes from the OAuth sign-in flow, not an env var. The
-full flow (authorize, PKCE, token exchange) is in the SDK's integration guide.
+| Component | What it renders |
+|---|---|
+| `RestaurantCard` | A Discovery restaurant — photo with gradient protection, name, cuisine tags, price tier. Server-safe. |
+| `UserCard` | The signed-in member — avatar (or monogram), name, email, account-status tag. |
+| `Tag` | Pill label with `neutral` / `primary` / `success` / `failure` tones. |
+| `BBPayButton` | Blackbird Pay — purple pill, optional USD amount. Wire `onPay` to your payment flow. |
+| `LoginButton` | "Sign in with Blackbird" — bird mark on black, points at your OAuth start route. |
+| `BirdMark` | The bird logo as an inline SVG (brand rule: black or white surfaces only, never purple). |
+
+## The member section
+
+The wallet and passport need a member token. There are two ways to get one:
+
+1. **Sign in with Blackbird (default).** With `CLIENT_ID`, `CLIENT_SECRET`, and
+   `REDIRECT_URI` set, the page shows a sign-in button. It runs the full OAuth
+   authorization-code + PKCE flow server-side via the SDK's `FlynetOAuth`
+   helper: tokens are stored in HttpOnly cookies, the access token auto-renews
+   from the rotating refresh token (middleware), and `/api/auth/logout` signs
+   out. `REDIRECT_URI` must exactly match a redirect URI registered for your
+   OAuth app.
+
+   > **Local dev needs a tunnel.** The staging edge rejects `localhost` /
+   > `127.0.0.1` redirect URIs before they reach the OAuth server, so the
+   > sign-in flow can't complete on a bare localhost URL. Run
+   > `ngrok http 3000`, get `https://<your-subdomain>.ngrok.app/callback`
+   > whitelisted for your OAuth app through the Flynet developer portal, set it
+   > as `REDIRECT_URI`, and open the app through the ngrok URL — the session
+   > cookies are host-scoped, so the whole flow has to run on that host.
+2. **Pin a token.** Set `ACCESS_TOKEN` in `.env.local` (scopes `read:profile` +
+   `read:wallets`) and it takes precedence — no sign-in needed. Staging tokens
+   expire after 60 minutes, so this is for quick poking, not sessions.
+
+The member components fetch from the browser, and staging only accepts
+registered origins — so the starter routes those calls through a same-origin
+proxy (`app/flynet-proxy/`).
+
+## Switching environments
+
+The starter targets **staging** by default. To run against production, set the
+three optional env vars in `.env.local` — `API_BASE_URL`, `AUTH_BASE_URL`, and
+`AUTH_AUDIENCE` (values in `.env.example`) — and swap in your production
+credential set. Production access is gated by partner approval; you receive a
+separate `client_id`, `client_secret`, API key, registered redirect URI, and
+merchant id at production sign-off. Staging and production credentials are not
+interchangeable. Everything else (the proxy, the OAuth routes, the payment
+route) picks the environment up from those vars.
 
 ## Next steps
 
-- **OAuth / member sign-in** — the integration guide in the `@flynetdev/core`
-  package (`docs/integration-guide.md`).
+- **OAuth / member sign-in** — `concepts/oauth` in the Flynet developer portal
+  (mirrored in `docs/llms.txt`).
 - **All the components and hooks** — [`@flynetdev/react`](https://www.npmjs.com/package/@flynetdev/react).
 - **Field-level API reference** — the Flynet developer portal.

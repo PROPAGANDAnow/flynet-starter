@@ -2,8 +2,12 @@ import "./globals.css";
 // The Flynet component theme. Import it once, at the root.
 import "@flynetdev/react/styles.css";
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 
-export const metadata = {
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
   title: "Flynet Starter",
   description: "A minimal app built on the Flynet SDK.",
 };
@@ -11,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
