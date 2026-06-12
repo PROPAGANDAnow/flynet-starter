@@ -1,0 +1,16 @@
+{
+  "$comment": "Shared project settings. Agents must never read or write real env files (they hold Blackbird secrets); the dev setup drawer manages .env.local. .env.example holds placeholders only and is intentionally not denied. See CLAUDE.md.",
+  "permissions": {
+    "deny": [
+      "Read(.env.local)",
+      "Read(.env.*.local)",
+      "Read(.env)",
+      "Edit(.env.local)",
+      "Edit(.env.*.local)",
+      "Edit(.env)",
+      "Write(.env.local)",
+      "Write(.env.*.local)",
+      "Write(.env)"
+    ]
+  }
+}
