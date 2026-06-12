@@ -140,6 +140,16 @@ function SignInNotice() {
 }
 
 function AuthErrorNotice({ error }: { error: string }) {
+  if (error === "redirect_uri_unset") {
+    return (
+      <Notice tone="error" title="Set your redirect URI first">
+        <Code>REDIRECT_URI</Code> isn&apos;t set, so sign-in would fall back to a{" "}
+        <Code>localhost</Code> callback that Blackbird hasn&apos;t whitelisted.
+        Open <strong>⚙ Dev Setup</strong> and set <Code>REDIRECT_URI</Code> to
+        your tunnel (or deployed) URL + <Code>/callback</Code>, then try again.
+      </Notice>
+    );
+  }
   return (
     <Notice tone="error" title="Sign-in didn't complete">
       The OAuth flow failed (<Code>{error}</Code>). Check <Code>FLYNET_CLIENT_ID</Code>,{" "}

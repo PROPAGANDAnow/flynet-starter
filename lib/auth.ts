@@ -41,6 +41,36 @@ export function appUrl(path: string, requestUrl: string | URL): URL {
   return new URL(path, process.env.REDIRECT_URI || requestUrl);
 }
 
+type ForwardableRequest = { headers: Headers; nextUrl: URL };
+
+/**
+ * The origin the browser is actually viewing, reconstructed from forwarded
+ * proxy headers (falling back to the request host). Unlike {@link appUrl} this
+ * does NOT depend on REDIRECT_URI, so it can carry a setup-error redirect back
+ * to the right host even when REDIRECT_URI is the thing that's missing.
+ */
+export function publicOrigin(req: ForwardableRequest): URL {
+  const host =
+    (req.headers.get("x-forwarded-host") || req.nextUrl.host)
+      .split(",")[0]
+      .trim();
+  const proto =
+    req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ||
+    req.nextUrl.protocol.replace(":", "");
+  return new URL(`${proto}://${host}`);
+}
+
+/**
+ * True when REDIRECT_URI is unset. Without it the SDK falls back to a
+ * localhost:3000/callback redirect_uri that Blackbird won't have whitelisted,
+ * so sign-in would bounce to a dead callback. Callers block the flow and
+ * surface a setup error instead of starting a doomed round-trip — note the dev
+ * browser is on localhost even when a tunnel is up, so host alone can't tell us.
+ */
+export function redirectUriMissing(): boolean {
+  return !process.env.REDIRECT_URI;
+}
+
 /** Build the SDK's OAuth helper from env, or null when the app isn't configured. */
 export function makeOAuth(): FlynetOAuth | null {
   const clientId = process.env.FLYNET_CLIENT_ID;
