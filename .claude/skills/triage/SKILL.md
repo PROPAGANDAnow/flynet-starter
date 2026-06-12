@@ -5,7 +5,7 @@ description: Triage issues through a state machine driven by triage roles. Use w
 
 # Triage
 
-Move issues on the project issue tracker through a small state machine of triage roles.
+Move issues through a small state machine of triage roles. The issue tracker is the **local filesystem** — issues live as markdown files under `.scratch/`, and a role is recorded as a `Status:` line near the top of each file (no GitHub/GitLab/Linear). "Querying the tracker" means scanning `.scratch/`; "posting a comment" means appending under the file's `## Comments` heading.
 
 Every comment or issue posted to the issue tracker during triage **must** start with this disclaimer:
 

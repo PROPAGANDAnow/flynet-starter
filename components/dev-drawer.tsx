@@ -9,7 +9,7 @@ import { useCallback, useEffect, useState } from "react";
 //   • prompts  — the curated hackathon dev journey (slash commands to run, in
 //                order; optional steps are badged). Pure UI, copies to clipboard.
 //   • progress — live task status for a `/to-work` run, polled from
-//                /api/dev/progress (which reads .scratch/progress.json).
+//                /api/dev/progress (which reads .flynet/progress.json).
 // Everything talks to /api/dev/* — nothing here touches real secrets directly.
 
 type EnvStatus = { isSet: boolean; masked: string | null };
@@ -379,7 +379,7 @@ function NgrokStep() {
       index={2}
       title="ngrok tunnel"
       done={running}
-      hint="Local OAuth sign-in needs a public URL — staging blocks localhost redirects."
+      hint="Public URL for local sign-in — staging blocks localhost."
       action={
         <button
           type="button"
@@ -410,6 +410,13 @@ function NgrokStep() {
               {copied ? "Copied!" : "Copy"}
             </span>
           </button>
+          {/* The tunnel URL only works for OAuth once its /callback is
+              whitelisted on the Blackbird side — nudge the dev to send it over. */}
+          <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs text-brand-yellow">
+            Share this URL with your team to whitelist{" "}
+            <code className="font-mono">{status?.url}/callback</code> for the
+            Blackbird API.
+          </p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -417,9 +424,7 @@ function NgrokStep() {
             <span className="inline-block h-2 w-2 rounded-full bg-failure" />
             ngrok is not running
           </div>
-          <p className="text-xs text-subtle">
-            Start it, then point REDIRECT_URI at the tunnel:
-          </p>
+          <p className="text-xs text-subtle">Start it, then set REDIRECT_URI:</p>
           <div className="flex items-center gap-2 rounded-xl border border-strong bg-surface-low px-3 py-2">
             <code className="flex-1 font-mono text-xs text-foreground">
               ngrok http 3000
