@@ -59,7 +59,7 @@ const CREDENTIALS: {
   {
     name: "REDIRECT_URI",
     label: "Redirect URI",
-    help: "Your ngrok (or deployed) https URL + /callback. Must match a URI whitelisted for your OAuth app.",
+    help: "Your ngrok (or deployed) https URL + /callback. Whitelist it at bb-apis.vercel.app/redirect (sign in with your Slack email).",
     secret: false,
     placeholder: "https://<subdomain>.ngrok.app/callback",
   },
@@ -575,11 +575,21 @@ function NgrokStep() {
             </span>
           </button>
           {/* The tunnel URL only works for OAuth once its /callback is
-              whitelisted on the Blackbird side — nudge the dev to send it over. */}
-          <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs text-brand-yellow">
-            Share this URL with your team to whitelist{" "}
+              whitelisted on the Blackbird side — point the dev at the self-serve
+              portal so they can add it themselves. */}
+          <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs leading-relaxed text-brand-yellow">
+            Whitelist{" "}
             <code className="font-mono">{status?.url}/callback</code> for the
-            Blackbird API.
+            Blackbird API: sign in with your Slack email at{" "}
+            <a
+              href="https://bb-apis.vercel.app/redirect"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              bb-apis.vercel.app/redirect
+            </a>{" "}
+            and add it there.
           </p>
         </div>
       ) : (
@@ -1005,9 +1015,17 @@ function DeployView() {
               <code className="font-mono text-foreground">
                 https://&lt;your-app&gt;.vercel.app/callback
               </code>
-              , redeploy, and get that{" "}
-              <code className="font-mono text-foreground">/callback</code> URL
-              whitelisted for your OAuth app.
+              , redeploy, and whitelist that{" "}
+              <code className="font-mono text-foreground">/callback</code> URL at{" "}
+              <a
+                href="https://bb-apis.vercel.app/redirect"
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary-bright underline underline-offset-2"
+              >
+                bb-apis.vercel.app/redirect
+              </a>{" "}
+              (sign in with your Slack email).
             </span>
           </li>
         </ol>
@@ -1047,7 +1065,16 @@ function DeployView() {
         <code className="font-mono">REDIRECT_URI</code> (the ngrok URL) won&apos;t
         work in production. It has to be your Vercel domain plus{" "}
         <code className="font-mono">/callback</code>, and that exact URL must be
-        whitelisted for your OAuth app or sign-in will fail.
+        whitelisted at{" "}
+        <a
+          href="https://bb-apis.vercel.app/redirect"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2"
+        >
+          bb-apis.vercel.app/redirect
+        </a>{" "}
+        or sign-in will fail.
       </p>
     </div>
   );

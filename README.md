@@ -94,9 +94,11 @@ The wallet and passport need a member token. There are two ways to get one:
    > ngrok, make a free account at
    > [dashboard.ngrok.com/signup](https://dashboard.ngrok.com/signup) and run
    > `ngrok config add-authtoken <token>` once (it won't tunnel without it).
-   > Then run `ngrok http 3000`, get `https://<your-subdomain>.ngrok.app/callback`
-   > whitelisted for your OAuth app through the Flynet developer portal, set it
-   > as `REDIRECT_URI`, and open the app through the ngrok URL — the session
+   > Then run `ngrok http 3000`, whitelist `https://<your-subdomain>.ngrok.app/callback`
+   > for your OAuth app at
+   > [bb-apis.vercel.app/redirect](https://bb-apis.vercel.app/redirect) (sign in
+   > with your Slack email), set it as `REDIRECT_URI`, and open the app through
+   > the ngrok URL — the session
    > cookies are host-scoped, so the whole flow has to run on that host.
 2. **Pin a token.** Set `ACCESS_TOKEN` in `.env.local` (scopes `read:profile` +
    `read:wallets`) and it takes precedence — no sign-in needed. Access tokens
