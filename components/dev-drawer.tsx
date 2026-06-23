@@ -16,7 +16,14 @@ import { AnimatePresence, motion } from "framer-motion";
 // Everything talks to /api/dev/* — nothing here touches real secrets directly.
 
 type FieldStatus = { isSet: boolean; masked: string | null };
-type NgrokStatus = { running: boolean; url: string | null };
+// Step 2's backend reports the public URL sign-in redirects back to, plus which
+// environment produced it: a Codespace forwards a URL automatically, local dev
+// gets one from a running ngrok agent. The UI branches on `kind`.
+type TunnelStatus = {
+  running: boolean;
+  url: string | null;
+  kind: "codespaces" | "ngrok";
+};
 
 type View = "setup" | "prompts" | "progress" | "deploy";
 
@@ -332,7 +339,7 @@ function SetupView({ setView }: { setView: (v: View) => void }) {
   return (
     <>
       <CredentialsStep reloadToken={credReloadToken} />
-      <NgrokStep onRedirectUriSaved={() => setCredReloadToken((t) => t + 1)} />
+      <TunnelStep onRedirectUriSaved={() => setCredReloadToken((t) => t + 1)} />
       <NavCard
         title="Prompts"
         hint="The hackathon dev journey — which slash command to run, in order."
@@ -558,12 +565,12 @@ const AGENT_TUNNEL_PROMPT =
   "(`ngrok http 3000`), and tell me the public https URL. Don't touch " +
   ".env.local — I'll set REDIRECT_URI from the dev setup drawer.";
 
-function NgrokStep({
+function TunnelStep({
   onRedirectUriSaved,
 }: {
   onRedirectUriSaved?: () => void;
 }) {
-  const [status, setStatus] = useState<NgrokStatus | null>(null);
+  const [status, setStatus] = useState<TunnelStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [settingRedirect, setSettingRedirect] = useState(false);
@@ -575,10 +582,10 @@ function NgrokStep({
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/dev/ngrok");
-      setStatus((await res.json()) as NgrokStatus);
+      const res = await fetch("/api/dev/tunnel");
+      setStatus((await res.json()) as TunnelStatus);
     } catch {
-      setStatus({ running: false, url: null });
+      setStatus({ running: false, url: null, kind: "ngrok" });
     } finally {
       setLoading(false);
     }
@@ -634,13 +641,19 @@ function NgrokStep({
   }
 
   const running = status?.running ?? false;
+  const kind = status?.kind ?? "ngrok";
+  const isCodespace = kind === "codespaces";
 
   return (
     <Section
       index={2}
-      title="ngrok tunnel"
+      title={isCodespace ? "Cloud preview URL" : "ngrok tunnel"}
       done={running}
-      hint="Public URL for local sign-in — Blackbird blocks localhost."
+      hint={
+        isCodespace
+          ? "Public URL for sign-in — auto-detected from your Codespace."
+          : "Public URL for local sign-in — Blackbird blocks localhost."
+      }
       action={
         <button
           type="button"
@@ -658,7 +671,7 @@ function NgrokStep({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-success">
             <span className="inline-block h-2 w-2 rounded-full bg-success" />
-            ngrok is running
+            {isCodespace ? "Codespace preview is live" : "ngrok is running"}
           </div>
           <button
             type="button"
@@ -691,6 +704,21 @@ function NgrokStep({
               </span>
             ) : null}
           </div>
+
+          {/* Codespaces forwards new ports as private (they require a GitHub
+              login), so the Blackbird redirect can't reach the callback until
+              port 3000 is flipped to Public. This is the one manual Codespaces
+              step the platform won't let us do for you. */}
+          {isCodespace ? (
+            <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs leading-relaxed text-brand-yellow">
+              Set port <code className="font-mono">3000</code> to{" "}
+              <strong>Public</strong> in the <strong>Ports</strong> panel (or run{" "}
+              <code className="font-mono">
+                gh codespace ports visibility 3000:public
+              </code>
+              ) — sign-in can&apos;t reach a private Codespace port.
+            </p>
+          ) : null}
 
           {/* The tunnel URL only works for OAuth once its /callback is
               whitelisted on the Blackbird side — point the dev at the self-serve
@@ -1053,18 +1081,20 @@ const DEPLOY_AGENT_PROMPT =
   "Deploy this Next.js app to Vercel. If it isn't on GitHub yet, push it, then " +
   "create a Vercel project from the repo. Set these environment variables in " +
   "Vercel from my .env.local: FLYNET_API_KEY, FLYNET_CLIENT_ID, " +
-  "FLYNET_CLIENT_SECRET. After the first deploy, set REDIRECT_URI to " +
-  "https://<the-deployed-domain>/callback, redeploy, and tell me that callback " +
-  "URL so I can get it whitelisted for my OAuth app.";
+  "FLYNET_CLIENT_SECRET. Don't set REDIRECT_URI — the app derives it from " +
+  "Vercel's production URL automatically. Once deployed, tell me the production " +
+  "domain's /callback URL so I can get it whitelisted for my OAuth app.";
 
-// The .env.local keys that have to follow the app to Vercel. The API_BASE_URL /
-// AUTH_* vars are intentionally absent — the app already defaults to production
-// Blackbird, so they're only needed to *override* back to staging.
+// The .env.local keys that have to follow the app to Vercel. REDIRECT_URI is
+// intentionally absent — on Vercel the app derives it from the injected
+// VERCEL_PROJECT_PRODUCTION_URL, so there's nothing to set (and no redeploy).
+// The API_BASE_URL / AUTH_* vars are absent for the same reason as always: the
+// app defaults to production Blackbird, so they're only needed to override to
+// staging.
 const DEPLOY_ENV_KEYS = [
   "FLYNET_API_KEY",
   "FLYNET_CLIENT_ID",
   "FLYNET_CLIENT_SECRET",
-  "REDIRECT_URI",
 ];
 
 function DeployView() {
@@ -1129,13 +1159,13 @@ function DeployView() {
           <li className="flex gap-3">
             <span className="font-mono text-primary-bright">4.</span>
             <span>
-              After the first deploy, set{" "}
-              <code className="font-mono text-foreground">REDIRECT_URI</code> to{" "}
+              No need to set{" "}
+              <code className="font-mono text-foreground">REDIRECT_URI</code> —
+              the app derives it from your Vercel production URL. Just whitelist{" "}
               <code className="font-mono text-foreground">
                 https://&lt;your-app&gt;.vercel.app/callback
-              </code>
-              , redeploy, and whitelist that{" "}
-              <code className="font-mono text-foreground">/callback</code> URL at{" "}
+              </code>{" "}
+              at{" "}
               <a
                 href="https://bb-apis.vercel.app/redirect"
                 target="_blank"
@@ -1144,7 +1174,10 @@ function DeployView() {
               >
                 bb-apis.vercel.app/redirect
               </a>{" "}
-              (sign in with your Slack email).
+              (sign in with your Slack email). On a custom domain, set{" "}
+              <code className="font-mono text-foreground">REDIRECT_URI</code> to
+              that domain&apos;s <code className="font-mono text-foreground">/callback</code>{" "}
+              instead.
             </span>
           </li>
         </ol>
@@ -1180,11 +1213,12 @@ function DeployView() {
           and be whitelisted, or sign-in breaks in prod exactly like it would on
           localhost. */}
       <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs leading-relaxed text-brand-yellow">
-        Heads up: your local{" "}
-        <code className="font-mono">REDIRECT_URI</code> (the ngrok URL) won&apos;t
-        work in production. It has to be your Vercel domain plus{" "}
-        <code className="font-mono">/callback</code>, and that exact URL must be
-        whitelisted at{" "}
+        Heads up: don&apos;t carry your local{" "}
+        <code className="font-mono">REDIRECT_URI</code> (the ngrok/Codespace URL)
+        over to Vercel — the app derives the right one from your production
+        domain. The one thing you must do is whitelist your{" "}
+        <code className="font-mono">https://&lt;your-app&gt;.vercel.app/callback</code>{" "}
+        at{" "}
         <a
           href="https://bb-apis.vercel.app/redirect"
           target="_blank"

@@ -190,6 +190,29 @@ function AuthErrorNotice({ error }: { error: string }) {
       </Notice>
     );
   }
+  if (error === "handshake_cookie_missing") {
+    return (
+      <Notice tone="error" title="Open the app on the same host it redirects back to">
+        Sign-in came back without its handshake cookie. That cookie is
+        host-scoped, so this means the flow <em>started</em> on a different host
+        than the callback landed on — almost always opening the app on{" "}
+        <Code>localhost:3000</Code> while <Code>REDIRECT_URI</Code> points at
+        your tunnel. Open the app at your tunnel (or deployed) URL and start
+        sign-in <strong>there</strong>, so the whole round-trip runs on one host.
+      </Notice>
+    );
+  }
+  if (error.startsWith("provider_")) {
+    const reason = error.replace("provider_", "");
+    return (
+      <Notice tone="error" title="Blackbird rejected the sign-in">
+        The OAuth provider returned <Code>{reason}</Code>.{" "}
+        {reason === "access_denied"
+          ? "That's the consent screen being dismissed — try again and approve it."
+          : "Check your OAuth app's client id and that this redirect URI is whitelisted."}
+      </Notice>
+    );
+  }
   return (
     <Notice tone="error" title="Sign-in didn't complete">
       The OAuth flow failed (<Code>{error}</Code>). Check <Code>FLYNET_CLIENT_ID</Code>,{" "}

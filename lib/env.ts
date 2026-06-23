@@ -33,6 +33,12 @@ export const env = createEnv({
     // exactly match a redirect URI registered for the OAuth app. Optional —
     // lib/auth.ts blocks sign-in (and falls back to localhost) when it's unset.
     REDIRECT_URI: z.url().optional(),
+    // The deploy's stable production hostname (e.g. "my-app.vercel.app"),
+    // injected automatically by Vercel on every deploy. lib/auth.ts derives
+    // REDIRECT_URI from it when REDIRECT_URI is unset, so a Vercel deploy works
+    // without the "set REDIRECT_URI by hand, then redeploy" step. Bare hostname,
+    // no scheme — so a plain string, not z.url().
+    VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1).optional(),
 
     // ── Environment routing ────────────────────────────────────────────────
     // Unset = production. These defaults centralize what used to be repeated as
@@ -69,6 +75,7 @@ export const env = createEnv({
     FLYNET_MERCHANT_ID: process.env.FLYNET_MERCHANT_ID,
     ACCESS_TOKEN: process.env.ACCESS_TOKEN,
     REDIRECT_URI: process.env.REDIRECT_URI,
+    VERCEL_PROJECT_PRODUCTION_URL: process.env.VERCEL_PROJECT_PRODUCTION_URL,
     API_BASE_URL: process.env.API_BASE_URL,
     AUTH_BASE_URL: process.env.AUTH_BASE_URL,
     AUTH_AUDIENCE: process.env.AUTH_AUDIENCE,

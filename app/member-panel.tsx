@@ -57,6 +57,7 @@ export function MemberPanel({ accessToken }: { accessToken: string }) {
         </h2>
         <MemberProfile />
         <WalletBadge display="fly-and-usd" />
+        <ClaimRewardSection />
         <PaySection />
       </section>
     </FlynetProvider>
@@ -126,6 +127,119 @@ function PaySection() {
         <p className="text-xs text-subtle">
           Demo payment — 1 FLY to the starter merchant, created and confirmed
           server-side.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+// Claim a 1 FLY reward, credited to the signed-in member from the app's own
+// wallet. The whole flow runs server-side (/api/reward) under the Discovery API
+// key — the browser never sees it. Lives inside the provider so a successful
+// claim can invalidate the wallet query and refresh the badge above.
+type RewardStatus = {
+  merchantId: string | null;
+  balanceWei: string | null;
+  balanceUsdCents: number | null;
+  canClaim: boolean;
+};
+
+function ClaimRewardSection() {
+  const queryClient = useQueryClient();
+  const [claim, setClaim] = useState<{
+    phase: "idle" | "claiming" | "claimed" | "error";
+    message?: string;
+    insufficient?: boolean;
+  }>({ phase: "idle" });
+
+  // App-wallet status: does it hold enough FLY to cover a claim, and the
+  // merchant id to hand out for a top-up. Cached like the rest of the panel.
+  const { data: status } = useQuery<RewardStatus>({
+    queryKey: ["app-reward-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/reward");
+      if (!res.ok) throw new Error("status");
+      return res.json();
+    },
+  });
+
+  async function handleClaim() {
+    setClaim({ phase: "claiming" });
+    try {
+      const res = await fetch("/api/reward", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setClaim({
+          phase: "error",
+          message: data.error ?? `Claim failed (HTTP ${res.status}).`,
+          insufficient: Boolean(data.insufficient),
+        });
+        return;
+      }
+      setClaim({
+        phase: "claimed",
+        message: data.alreadyClaimed
+          ? "Already claimed — 1 FLY is in your wallet."
+          : "Claimed! 1 FLY added to your wallet.",
+      });
+      // The member's balance changed upstream; refetch the wallet badge, and
+      // the app-wallet status (its balance just dropped by 1 FLY).
+      queryClient.invalidateQueries({ queryKey: walletsQueryKey });
+      queryClient.invalidateQueries({ queryKey: ["app-reward-status"] });
+    } catch {
+      setClaim({ phase: "error", message: "Couldn't reach the rewards API." });
+    }
+  }
+
+  // App wallet is short on FLY (known up front, or surfaced by a failed claim):
+  // point the developer at the top-up path instead of a dead button.
+  const walletEmpty = status?.canClaim === false || claim.insufficient;
+  if (walletEmpty) {
+    return (
+      <div className="space-y-2 rounded-2xl border border-white/10 p-4 text-sm">
+        <p className="font-medium text-foreground">Claim 1 FLY</p>
+        <p className="text-xs leading-relaxed text-muted">
+          The app wallet is out of FLY, so there&apos;s nothing to reward with
+          yet. To get it funded for testing, send this Flynet merchant id to the
+          Flynet team:
+        </p>
+        {status?.merchantId ? (
+          <code className="block break-all rounded bg-white/10 px-2 py-1 text-xs text-foreground">
+            {status.merchantId}
+          </code>
+        ) : (
+          <p className="text-xs text-subtle">
+            (merchant id unavailable — check the key&apos;s <code>read:app</code>{" "}
+            scope.)
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2 pt-2">
+      <button
+        type="button"
+        onClick={handleClaim}
+        disabled={claim.phase === "claiming" || claim.phase === "claimed"}
+        className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-primary-foreground transition duration-150 hover:opacity-90 active:bg-primary-dim disabled:opacity-50"
+      >
+        ✦ Claim 1 FLY
+      </button>
+      {claim.phase === "claiming" ? (
+        <p className="text-xs text-subtle">Issuing reward…</p>
+      ) : null}
+      {claim.phase === "claimed" ? (
+        <p className="text-xs text-success">{claim.message}</p>
+      ) : null}
+      {claim.phase === "error" ? (
+        <p className="text-xs text-failure">{claim.message}</p>
+      ) : null}
+      {claim.phase === "idle" ? (
+        <p className="text-xs text-subtle">
+          A free 1 FLY welcome reward, credited to your wallet from the app
+          wallet — instant and irreversible.
         </p>
       ) : null}
     </div>

@@ -4,6 +4,32 @@ A minimal Next.js app built on the [Flynet SDK](https://www.npmjs.com/package/@f
 Clone it, add an API key, and you have real Blackbird restaurant data rendering
 through the SDK. Use it as the starting point for your own integration.
 
+## No laptop setup? Build in the cloud
+
+Don't have Node.js installed — or don't want to deal with ngrok? You don't have
+to. There are two cloud paths, and you can use both. Both run from **your own
+fork** of this repo, so [fork it first](https://github.com/PROPAGANDAnow/flynet-starter/fork)
+(or use your existing fork).
+
+- **Build in a Codespace** to *iterate*. On your fork, click **Code ▸ Codespaces
+  ▸ Create codespace on main**. It runs the app in your browser with Node
+  preinstalled and gives every port a public HTTPS URL — so sign-in works with
+  **no local install and no ngrok**. Open the running app, click **⚙ Dev Setup**
+  (bottom-right), and the drawer walks you through your Blackbird credentials.
+  One Codespaces-only step: flip port **3000** to **Public** in the Ports panel
+  so the OAuth redirect can reach you (the drawer reminds you).
+
+- **Deploy to Vercel** to *ship a durable demo link*. Import your fork at
+  [vercel.com/new](https://vercel.com/new), then set `FLYNET_API_KEY`,
+  `FLYNET_CLIENT_ID`, and `FLYNET_CLIENT_SECRET` in the project — you do **not**
+  need to set `REDIRECT_URI`, the app derives it from your Vercel production URL.
+  Whitelist `https://<your-app>.vercel.app/callback` (see below) and you're live.
+  Pushes auto-deploy, so "deploy on every change" comes for free.
+
+Both flows act on whatever fork you open them from, so they keep working for
+anyone who forks this starter. If you do have Node locally, the classic
+Quickstart below still works.
+
 ## Prerequisites
 
 - Node 20 or newer
@@ -100,6 +126,11 @@ The wallet and passport need a member token. There are two ways to get one:
    > with your Slack email), set it as `REDIRECT_URI`, and open the app through
    > the ngrok URL — the session
    > cookies are host-scoped, so the whole flow has to run on that host.
+   >
+   > In a **Codespace** you can skip ngrok entirely: the forwarded port already
+   > has a public URL, so the Dev Setup drawer detects it and sets `REDIRECT_URI`
+   > for you (just flip port 3000 to Public). On **Vercel**, `REDIRECT_URI` is
+   > derived from the production URL automatically — you only whitelist it.
 2. **Pin a token.** Set `ACCESS_TOKEN` in `.env.local` (scopes `read:profile` +
    `read:wallets`) and it takes precedence — no sign-in needed. Access tokens
    expire after 60 minutes, so this is for quick poking, not sessions.

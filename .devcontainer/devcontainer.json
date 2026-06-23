@@ -1,0 +1,32 @@
+// GitHub Codespaces / Dev Containers config — the no-install path for people
+// who don't have Node locally. Open this repo in a Codespace and you get Node,
+// the app running on port 3000, and a public HTTPS preview URL — no Node, no
+// ngrok, nothing to install on your machine.
+//
+// The OAuth redirect needs to reach this Codespace from the Blackbird edge, so
+// port 3000 has to be PUBLIC. Codespaces forwards new ports as private by
+// default; the Dev Setup drawer detects that and nags you to flip 3000 to
+// "Public" in the Ports panel (or run `gh codespace ports visibility 3000:public`).
+{
+  "name": "Flynet Starter",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+
+  // Install deps once when the Codespace is created.
+  "postCreateCommand": "npm install",
+
+  // Start the dev server on attach, in its own terminal (the object form runs
+  // it without blocking the attach). The drawer's "⚙ Dev Setup" button lives in
+  // this running app.
+  "postAttachCommand": {
+    "dev-server": "npm run dev"
+  },
+
+  // Auto-forward the Next.js port and surface it as soon as it's up.
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Flynet app",
+      "onAutoForward": "notify"
+    }
+  }
+}

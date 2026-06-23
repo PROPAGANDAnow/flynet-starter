@@ -8,6 +8,9 @@ build
 .env.local
 .env*.local
 
+# Local member session (access + refresh tokens) — never commit
+.flynet-session.json
+
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
