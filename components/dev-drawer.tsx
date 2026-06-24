@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 // Developer onboarding drawer. Renders only in dev (layout.tsx gates it on
 // NODE_ENV), and its backend routes 404 in production too. It has two views,
 // switched by the `view` state and a back affordance in the header:
-//   • setup    — get the starter running (Blackbird credentials, ngrok tunnel).
+//   • setup    — get the starter running (Blackbird credentials, tunnel).
 //   • deploy   — "I'm ready to deploy": how to ship to Vercel and which env
 //                vars to set there. Pure UI, copies to clipboard.
 // Everything talks to /api/dev/* — nothing here touches real secrets directly.
@@ -62,9 +62,9 @@ const CREDENTIALS: {
   {
     name: "REDIRECT_URI",
     label: "Redirect URI",
-    help: "Your ngrok (or deployed) https URL + /callback. Whitelist it at make.flynet.org (sign in with your Slack email).",
+    help: "Your tunnel (flynet make) or deployed https URL + /callback. Whitelist it at make.flynet.org (sign in with your Slack email).",
     secret: false,
-    placeholder: "https://<subdomain>.ngrok.app/callback",
+    placeholder: "https://<subdomain>.local.make.flynet.org/callback",
   },
 ];
 
@@ -471,16 +471,17 @@ function CredentialsStep({ reloadToken }: { reloadToken?: number }) {
   );
 }
 
-// ── Step 2: ngrok ────────────────────────────────────────────────────────────
-// Hand this to the agent so it does the tunnel setup — adds the authtoken and
-// starts the tunnel — without the dev juggling a second terminal. The agent
-// stops at reporting the URL: it never writes .env.local (the dev sets
-// REDIRECT_URI with the "Use as Redirect URI" button here). The dev pastes
-// their token where marked before sending it.
+// ── Step 2: tunnel ───────────────────────────────────────────────────────────
+// Hand this to the agent so it does the tunnel setup — runs `flynet make`
+// (ngrok is the fallback) — without the dev juggling a second terminal. The
+// agent stops at reporting the URL: it never writes .env.local (the dev sets
+// REDIRECT_URI with the "Use as Redirect URI" button here).
 const AGENT_TUNNEL_PROMPT =
-  "My ngrok authtoken is: <paste it here>. Add it with " +
-  "`ngrok config add-authtoken`, start a tunnel to port 3000 " +
-  "(`ngrok http 3000`), and tell me the public https URL. Don't touch " +
+  "Open a tunnel to my local app on port 3000 and tell me the public https " +
+  "URL. Use `flynet make` (the everyday tunnel command — it gives a " +
+  "https://<subdomain>.local.make.flynet.org URL). If `flynet make` isn't " +
+  "available, fall back to ngrok: my authtoken is <paste it here>, so add it " +
+  "with `ngrok config add-authtoken`, then run `ngrok http 3000`. Don't touch " +
   ".env.local — I'll set REDIRECT_URI from the dev setup drawer.";
 
 function TunnelStep({
@@ -572,7 +573,7 @@ function TunnelStep({
   return (
     <Section
       index={2}
-      title={isCodespace ? "Cloud preview URL" : "ngrok tunnel"}
+      title={isCodespace ? "Cloud preview URL" : "Tunnel (flynet make)"}
       done={running}
       hint={
         isCodespace
@@ -596,7 +597,7 @@ function TunnelStep({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-success">
             <span className="inline-block h-2 w-2 rounded-full bg-success" />
-            {isCodespace ? "Codespace preview is live" : "ngrok is running"}
+            {isCodespace ? "Codespace preview is live" : "Tunnel is running"}
           </div>
           <button
             type="button"
@@ -666,32 +667,24 @@ function TunnelStep({
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm text-muted">
             <span className="inline-block h-2 w-2 rounded-full bg-failure" />
-            ngrok is not running
+            No tunnel detected yet
           </div>
 
-          {/* First run only: ngrok refuses to tunnel without an authtoken, and
-              a bare `ngrok http 3000` fails with an opaque error if you skip it.
-              Point first-timers at the free signup before they hit that wall. */}
-          <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs leading-relaxed text-brand-yellow">
-            First time with ngrok? Grab a free authtoken at{" "}
-            <a
-              href="https://dashboard.ngrok.com/get-started/your-authtoken"
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-2"
-            >
-              ngrok.com
-            </a>{" "}
-            — then either run{" "}
-            <code className="font-mono">ngrok config add-authtoken &lt;token&gt;</code>{" "}
-            yourself, or paste the token into the prompt below and let your agent
-            set it up.
-          </p>
-
-          {/* Easiest path: hand the agent the token; it does the whole setup. */}
+          {/* Primary path: `flynet make` is the everyday tunnel command — it
+              opens a tunnel to the local app at *.local.make.flynet.org. */}
           <p className="text-xs text-subtle">
-            Ask your agent (paste your authtoken in first):
+            Run the everyday tunnel command, then Re-check above:
           </p>
+          <div className="flex items-center gap-2 rounded-xl border border-strong bg-surface-low px-3 py-2">
+            <code className="flex-1 font-mono text-xs text-foreground">
+              flynet make
+            </code>
+            <CopyIconButton text="flynet make" label="Copy command" />
+          </div>
+
+          {/* Easiest path: hand the agent the prompt; it runs the tunnel for
+              you (flynet make, or ngrok as a fallback). */}
+          <p className="text-xs text-subtle">Or ask your agent to do it:</p>
           <div className="flex items-start gap-2 rounded-xl border border-strong bg-surface-low px-3 py-2">
             <code className="flex-1 font-mono text-xs leading-relaxed text-foreground">
               {AGENT_TUNNEL_PROMPT}
@@ -699,17 +692,25 @@ function TunnelStep({
             <CopyIconButton text={AGENT_TUNNEL_PROMPT} label="Copy prompt" />
           </div>
 
-          {/* Or do it by hand. Once it's up, Re-check and the "Use as Redirect
-              URI" button appears to set REDIRECT_URI for you. */}
-          <p className="text-xs text-subtle">
-            Or run it yourself, then Re-check above:
+          {/* Fallback: ngrok. It refuses to tunnel without an authtoken, and a
+              bare `ngrok http 3000` fails with an opaque error if you skip it,
+              so point first-timers at the free signup before they hit that. */}
+          <p className="rounded-lg border border-brand-yellow/30 bg-brand-yellow/10 px-3 py-2 text-xs leading-relaxed text-brand-yellow">
+            Fallback — no <code className="font-mono">flynet make</code>? Use
+            ngrok. First time, grab a free authtoken at{" "}
+            <a
+              href="https://dashboard.ngrok.com/get-started/your-authtoken"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2"
+            >
+              ngrok.com
+            </a>
+            , run{" "}
+            <code className="font-mono">ngrok config add-authtoken &lt;token&gt;</code>
+            , then <code className="font-mono">ngrok http 3000</code> — and
+            Re-check above.
           </p>
-          <div className="flex items-center gap-2 rounded-xl border border-strong bg-surface-low px-3 py-2">
-            <code className="flex-1 font-mono text-xs text-foreground">
-              ngrok http 3000
-            </code>
-            <CopyIconButton text="ngrok http 3000" label="Copy command" />
-          </div>
         </div>
       )}
     </Section>

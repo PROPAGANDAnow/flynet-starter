@@ -8,7 +8,7 @@ through the SDK. Use it as the starting point for your own integration.
 
 Don't have Node.js installed — or don't want to deal with ngrok? You don't have
 to. There are two cloud paths, and you can use both. Both run from **your own
-fork** of this repo, so [fork it first](https://github.com/PROPAGANDAnow/flynet-starter/fork)
+fork** of this repo, so [fork it first](https://github.com/blackbird-labs-inc/flynet-starter/fork)
 (or use your existing fork).
 
 - **Build in a Codespace** to *iterate*. On your fork, click **Code ▸ Codespaces
@@ -116,21 +116,27 @@ The wallet and passport need a member token. There are two ways to get one:
 
    > **Local dev needs a tunnel.** The Blackbird edge rejects `localhost` /
    > `127.0.0.1` redirect URIs before they reach the OAuth server, so the
-   > sign-in flow can't complete on a bare localhost URL. First time with
-   > ngrok, make a free account at
-   > [dashboard.ngrok.com/signup](https://dashboard.ngrok.com/signup) and run
-   > `ngrok config add-authtoken <token>` once (it won't tunnel without it).
-   > Then run `ngrok http 3000`, whitelist `https://<your-subdomain>.ngrok.app/callback`
-   > for your OAuth app at
-   > [make.flynet.org](https://make.flynet.org/) (sign in
-   > with your Slack email), set it as `REDIRECT_URI`, and open the app through
-   > the ngrok URL — the session
-   > cookies are host-scoped, so the whole flow has to run on that host.
+   > sign-in flow can't complete on a bare localhost URL. The everyday command
+   > is **`flynet make`** — it opens a tunnel to your local app at a
+   > `*.local.make.flynet.org` URL. Run it, whitelist
+   > `https://<your-subdomain>.local.make.flynet.org/callback` for your OAuth app
+   > at [make.flynet.org](https://make.flynet.org/) (sign in with your Slack
+   > email), set it as `REDIRECT_URI`, and open the app through the tunnel URL —
+   > the session cookies are host-scoped, so the whole flow has to run on that
+   > host.
    >
-   > In a **Codespace** you can skip ngrok entirely: the forwarded port already
-   > has a public URL, so the Dev Setup drawer detects it and sets `REDIRECT_URI`
-   > for you (just flip port 3000 to Public). On **Vercel**, `REDIRECT_URI` is
-   > derived from the production URL automatically — you only whitelist it.
+   > _Fallback:_ if `flynet make` isn't available, you can use ngrok instead.
+   > First time with ngrok, make a free account at
+   > [dashboard.ngrok.com/signup](https://dashboard.ngrok.com/signup) and run
+   > `ngrok config add-authtoken <token>` once (it won't tunnel without it), then
+   > `ngrok http 3000` and whitelist the `https://<your-subdomain>.ngrok.app/callback`
+   > URL the same way.
+   >
+   > In a **Codespace** you can skip the tunnel entirely: the forwarded port
+   > already has a public URL, so the Dev Setup drawer detects it and sets
+   > `REDIRECT_URI` for you (just flip port 3000 to Public). On **Vercel**,
+   > `REDIRECT_URI` is derived from the production URL automatically — you only
+   > whitelist it.
 2. **Pin a token.** Set `ACCESS_TOKEN` in `.env.local` (scopes `read:profile` +
    `read:wallets`) and it takes precedence — no sign-in needed. Access tokens
    expire after 60 minutes, so this is for quick poking, not sessions.
