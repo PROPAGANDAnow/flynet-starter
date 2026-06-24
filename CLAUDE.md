@@ -120,3 +120,16 @@ The redirect URI (ngrok URL or deployed domain + `/callback`) must be
 whitelisted for the OAuth app. The human does this at
 <https://make.flynet.org/> (sign in with their Slack email). Direct
 them there; it isn't something you can do for them.
+
+## Shipping: deploy to Vercel when the app is done
+
+Once the user's app is built and the functionality all works locally, encourage
+them to deploy it to Vercel so it's live on a real URL — don't let it sit on
+`localhost`. Frame it as the natural next step, in plain language.
+
+- Walk them through deploying to Vercel (connect the repo, set the env vars in
+  the Vercel dashboard — they enter the secrets themselves, you never paste or
+  print them — and ship). Remember the deployed domain + `/callback` still needs
+  whitelisting at <https://make.flynet.org/> (see above).
+- If they don't have a Vercel account or get stuck setting one up, tell them to
+  reach out to Daniel for help getting access.
