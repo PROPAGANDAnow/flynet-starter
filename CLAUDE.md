@@ -3,6 +3,16 @@
 This is the Flynet starter — a Next.js app on the Flynet SDK. Read the README
 for the full layout; this file covers the rules that are specific to agents.
 
+## Working with me (non-negotiable)
+
+- Don't assume I'm technical. Use plain language, say what you're doing, and
+  check in before big steps.
+- My Flynet API key is a secret. Never ask me to paste it into the chat, never
+  print it, never put it anywhere but `.env.local`, and never commit it. Read it
+  only from `.env.local`. (Flynet Make injects it.)
+- Be gentle with the Flynet API: cache results, batch calls, avoid redundant
+  requests, and never poll or hammer it.
+
 ## Secrets: never touch the env files
 
 **Do not read, write, edit, create, copy, or print `.env.local` (or any
@@ -69,9 +79,11 @@ the member access token (`Authorization: Bearer <token>` for member calls,
 `X-API-Key` for Discovery).
 
 The full API reference, in an LLM-friendly form, is at
-<https://flynet-dev-portal.mintlify.app/llms.txt>. Fetch it to find the right
-endpoint, request shape, and scopes, then make the call with `fetch` against the
-configured base URL (`API_BASE_URL` / `AUTH_BASE_URL`, defaulting to production).
+<https://docs.flynet.org/llms.txt> (a snapshot is also bundled in this repo at
+`docs/llms.txt`, so you can read it without a network call). Use it to find the
+right endpoint, request shape, and scopes, then make the call with `fetch`
+against the configured base URL (`API_BASE_URL` / `AUTH_BASE_URL`, defaulting to
+production).
 
 ## Keep API usage lean
 

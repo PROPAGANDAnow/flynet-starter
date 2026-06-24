@@ -1,3 +1,14 @@
+<!--
+  NOTE ON ENVIRONMENT: This is a snapshot of the Flynet docs, whose interactive
+  examples are authored against STAGING. Any `https://api.staging.blackbird.xyz/...`
+  host in the curl/code samples below is a staging URL. In production, the API
+  base is `https://api.blackbird.xyz/flynet/v1` and the OAuth base is
+  `https://api.blackbird.xyz/oauth` (see the "Environments" section for the full
+  staging-vs-production table). API keys are `bb_live_…` (production) / `bb_test_…`
+  (staging), sent as `X-API-Key`; the env var this starter reads them from is
+  `FLYNET_API_KEY`.
+-->
+
 # Get the calling app
 Source: https://docs.flynet.org/api-reference/app/get
 
@@ -17,7 +28,7 @@ Auth: API key in `X-API-Key`. The key must carry the `read:app` scope.
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/app" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -65,7 +76,7 @@ key returns an empty-body `401` with a `WWW-Authenticate: Bearer` header.
 
 ```bash theme={null}
 curl https://api.staging.blackbird.xyz/flynet/v1/check_ins/{uuid} \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -164,7 +175,7 @@ returns only that restaurant's check-ins since the cutoff.
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/check_ins?restaurant={uuid}&created_after=2026-06-01T00:00:00Z" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -365,7 +376,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl https://api.staging.blackbird.xyz/flynet/v1/locations/{uuid} \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -405,7 +416,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/locations?page=0&page_size=25" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -451,7 +462,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl https://api.staging.blackbird.xyz/flynet/v1/locations/{uuid}/open_hours \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -862,7 +873,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl https://api.staging.blackbird.xyz/flynet/v1/restaurants/{uuid} \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Restaurant asset
@@ -893,7 +904,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=25" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -944,7 +955,7 @@ Auth: API key in `X-API-Key`.
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/restaurants/{uuid}/locations?page=0&page_size=25" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ## Response
@@ -995,7 +1006,7 @@ your app's wallet must hold enough FLY to cover the amount.
 
 ```bash theme={null}
 curl -X POST "https://api.staging.blackbird.xyz/flynet/v1/issue_reward" \
-  -H "X-API-Key: $API_KEY" \
+  -H "X-API-Key: $FLYNET_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "user_id": "{uuid}",
@@ -1790,7 +1801,7 @@ The rule that makes agent-assisted development safe: **the agent works with the 
 **Put values in `.env.local` yourself** — type them in your editor, not into the chat:
 
 ```bash .env.local theme={null}
-API_KEY=bb_...
+FLYNET_API_KEY=bb_...
 CLIENT_ID=...
 CLIENT_SECRET=...
 REDIRECT_URI=https://your-subdomain.ngrok-free.app/callback
@@ -1807,7 +1818,7 @@ REDIRECT_URI=https://your-subdomain.ngrok-free.app/callback
 `create-next-app` gitignores `.env.local` by default — verify `.env*.local` is in your `.gitignore`. Then commit an `.env.example` with names only, so the repo documents what's needed without containing anything:
 
 ```bash .env.example theme={null}
-API_KEY=
+FLYNET_API_KEY=
 CLIENT_ID=
 CLIENT_SECRET=
 REDIRECT_URI=
@@ -1825,10 +1836,10 @@ REDIRECT_URI=
 
 This covers Claude's file tools and the file commands it runs in Bash (`cat`, `head`, `tail`, `sed`). It doesn't stop a custom script the agent writes from opening the file itself — the names-not-values habit above is the real protection; the deny rule is the guardrail.
 
-**Keep secrets out of the browser.** In Next.js, only variables prefixed `NEXT_PUBLIC_` reach the client bundle — so never put that prefix on `API_KEY` or `CLIENT_SECRET`. Server code (route handlers, Server Components) reads them from `process.env`; if generated code ever references the API key in a client component, that's the bug to flag.
+**Keep secrets out of the browser.** In Next.js, only variables prefixed `NEXT_PUBLIC_` reach the client bundle — so never put that prefix on `FLYNET_API_KEY` or `CLIENT_SECRET`. Server code (route handlers, Server Components) reads them from `process.env`; if generated code ever references the API key in a client component, that's the bug to flag.
 
 <Warning>
-  Never paste a credential into a chat with any AI agent. Conversations can be logged, summarized, or fed back as context. The agent doesn't need values to build — it needs to know `process.env.API_KEY` exists.
+  Never paste a credential into a chat with any AI agent. Conversations can be logged, summarized, or fed back as context. The agent doesn't need values to build — it needs to know `process.env.FLYNET_API_KEY` exists.
 </Warning>
 
 ## 4. Verify locally
@@ -1847,7 +1858,7 @@ Link the project, then set the same variables in Vercel — values go into the C
 vercel link
 
 # Prompts for the value interactively — paste it there
-vercel env add API_KEY production
+vercel env add FLYNET_API_KEY production
 vercel env add CLIENT_ID production
 vercel env add CLIENT_SECRET production
 vercel env add REDIRECT_URI production   # your deployed callback URL, e.g. https://my-app.vercel.app/callback
@@ -2027,11 +2038,11 @@ API keys are 40-character strings with a prefix that indicates how
 they were issued:
 
 ```text theme={null}
-fly_live_<40 chars>    Production credentials
-fly_test_<40 chars>    Staging / dev credentials
+bb_live_<40 chars>    Production credentials
+bb_test_<40 chars>    Staging / dev credentials
 ```
 
-`fly_live_` keys are production keys; `fly_test_` keys are staging/dev
+`bb_live_` keys are production keys; `bb_test_` keys are staging/dev
 keys. The **environment binding is server-side**: your key is scoped to
 the DeveloperApp and environment it was minted under. Use the key you
 received in your onboarding email for the environment you were
@@ -2042,7 +2053,7 @@ provisioned for.
 Send the key in `X-API-Key`:
 
 ```bash theme={null}
-curl -H "X-API-Key: $API_KEY" \
+curl -H "X-API-Key: $FLYNET_API_KEY" \
   https://api.staging.blackbird.xyz/flynet/v1/restaurants
 ```
 
@@ -2080,8 +2091,8 @@ stop working immediately on revocation.
 
 ## Mixing environments
 
-Don't reuse a key across environments. Your `fly_test_` staging key
-authenticates against the staging API; your `fly_live_` production key
+Don't reuse a key across environments. Your `bb_test_` staging key
+authenticates against the staging API; your `bb_live_` production key
 authenticates against the production API. They're issued separately and
 aren't substitutes for each other.
 
@@ -2171,7 +2182,7 @@ issued separately when you're approved for live traffic; see
 | ------------------------------------------ | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `client_id`                                | `df1f9d01-…` (UUID)                                   | OAuth `/authorize` and `/token`. Public: safe to embed in browsers when paired with PKCE.                                                                                       |
 | `client_secret`                            | opaque \~40-char string                               | Backend `/token` exchange only. **Never expose to a browser.**                                                                                                                  |
-| API key                                    | 40-char string with `fly_test_` or `fly_live_` prefix | Discovery routes (`/restaurants*`, `/locations*`). Send as `X-API-Key`. Backend only. `fly_live_` is a production key, `fly_test_` a staging/dev key. Use the key you received. |
+| API key                                    | 40-char string with `bb_test_` or `bb_live_` prefix | Discovery routes (`/restaurants*`, `/locations*`). Send as `X-API-Key`. Backend only. `bb_live_` is a production key, `bb_test_` a staging/dev key. Use the key you received. |
 | API key hint                               | last 4 chars (e.g. `mgK9`)                            | Reference a key in support tickets without revealing the full value.                                                                                                            |
 | Registered redirect URI(s)                 | e.g. `https://yourapp.com/oauth/callback`             | Where `/oauth/authorize` redirects after consent. Must match exactly. Multiple allowed.                                                                                         |
 | Approved scopes                            | e.g. `read:profile read:user_checkins read:wallets`   | The scope set your app may request. Each member route is gated by scope; a token missing the required scope returns `403 insufficient_scope`.                                   |
@@ -2402,8 +2413,8 @@ if applicable, `flynet_merchant_id`.
 | API base    | `api.staging.blackbird.xyz`    | `api.blackbird.xyz`           |
 | Credentials | Issued at approval             | Issued at production sign-off |
 
-The API key prefix tells you the environment: `fly_test_` is a
-staging/dev key, `fly_live_` is a production key. The binding is also
+The API key prefix tells you the environment: `bb_test_` is a
+staging/dev key, `bb_live_` is a production key. The binding is also
 enforced server-side via the DeveloperApp that minted the key. Use the
 key you received against the environment you were provisioned for. Don't
 try to swap keys across environments; they're issued separately and
@@ -3120,7 +3131,7 @@ If `flynet_merchant_id` is missing, wrong, or scoped to a different partner, `cr
 }
 ```
 
-The merchant ID is not a secret on its own (it's an addressing field), but it's how the API knows which payee to route to. Store it alongside `client_id` and `API_KEY` in your env config; don't hard-code it.
+The merchant ID is not a secret on its own (it's an addressing field), but it's how the API knows which payee to route to. Store it alongside `client_id` and `FLYNET_API_KEY` in your env config; don't hard-code it.
 
 ## The primitive
 
@@ -3324,7 +3335,7 @@ you spin up one client per scheme and never mix them up:
 import { flynet, FlynetError } from "./flynet";
 
 const discovery = flynet({
-  credentials: { type: "apikey", apiKey: process.env.API_KEY! },
+  credentials: { type: "apikey", apiKey: process.env.FLYNET_API_KEY! },
 });
 
 const member = flynet({
@@ -3337,7 +3348,7 @@ const member = flynet({
 ```ts theme={null}
 const discovery = flynet({
   baseUrl: "https://api.blackbird.xyz/flynet/v1",
-  credentials: { type: "apikey", apiKey: process.env.API_KEY! },
+  credentials: { type: "apikey", apiKey: process.env.FLYNET_API_KEY! },
 });
 ```
 
@@ -3597,7 +3608,7 @@ Two credentials are not interchangeable. API-key routes (`/restaurants*`, `/loca
 
 ```bash theme={null}
 export API_BASE_URL="https://api.staging.blackbird.xyz/flynet/v1"
-export API_KEY="fly_test_..."       # from your onboarding email; paste exactly as received
+export FLYNET_API_KEY="bb_test_..."       # from your onboarding email; paste exactly as received
 export ACCESS_TOKEN="..."           # from /oauth/token; see OAuth concept
 ```
 
@@ -3611,7 +3622,7 @@ The simplest authenticated call. Pure server-to-server: no member context, no OA
 
 ```bash theme={null}
 curl -sS "$API_BASE_URL/restaurants?page=0&page_size=5" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 Expected (abbreviated, first restaurant only):
@@ -3751,7 +3762,7 @@ Confirm your API key works against a Discovery route.
 ```typescript theme={null}
 const res = await fetch(
   "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=1",
-  { headers: { "X-API-Key": process.env.API_KEY! } },
+  { headers: { "X-API-Key": process.env.FLYNET_API_KEY! } },
 );
 
 if (res.status === 401) {
@@ -3763,7 +3774,7 @@ if (res.status === 401) {
 
 ```bash theme={null}
 curl -i "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=1" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 `200` returns `{ "restaurants": [...], "pagination": {...} }`.
@@ -3880,7 +3891,7 @@ One paginated GET to populate a picker or first screen.
 ```typescript theme={null}
 const res = await fetch(
   "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=20",
-  { headers: { "X-API-Key": process.env.API_KEY! } },
+  { headers: { "X-API-Key": process.env.FLYNET_API_KEY! } },
 );
 const data = await res.json();
 console.log(data.restaurants?.length, data.pagination);
@@ -3888,7 +3899,7 @@ console.log(data.restaurants?.length, data.pagination);
 
 ```bash theme={null}
 curl -sS "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=20" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 `/restaurants` is a Discovery route (server-to-server, no member context), so it takes the API key, not an OAuth bearer. Sending `Authorization: Bearer …` returns `401 MISSING_API_KEY`. See [API keys](/concepts/api-keys).
@@ -3977,7 +3988,7 @@ The venue feed is **API-key** auth (server-side; the key needs `read:checkins`):
 
 ```bash theme={null}
 curl -sS "https://api.staging.blackbird.xyz/flynet/v1/check_ins?restaurant={uuid}&sort_order=desc&page_size=25" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 ```typescript theme={null}
@@ -3989,7 +4000,7 @@ const params = new URLSearchParams({
 
 const res = await fetch(
   `https://api.staging.blackbird.xyz/flynet/v1/check_ins?${params}`,
-  { headers: { "X-API-Key": process.env.API_KEY! } }
+  { headers: { "X-API-Key": process.env.FLYNET_API_KEY! } }
 );
 
 const data = await res.json();
@@ -4019,7 +4030,7 @@ location, optionally bounded by time:
 
 ```bash theme={null}
 curl "https://api.staging.blackbird.xyz/flynet/v1/check_ins?restaurant={uuid}&created_after=2026-04-01T00:00:00Z&page_size=25" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 <Note>
@@ -4340,7 +4351,7 @@ import { FlynetDiscoveryClient } from "@flynetdev/core";
 import { RestaurantList } from "@flynetdev/react";
 
 export default async function Page() {
-  const discovery = new FlynetDiscoveryClient({ apiKey: process.env.API_KEY! });
+  const discovery = new FlynetDiscoveryClient({ apiKey: process.env.FLYNET_API_KEY! });
   const { restaurants } = await discovery.restaurants.listRestaurants({ pageSize: 12 });
   return <RestaurantList restaurants={restaurants} />;
 }
@@ -4418,7 +4429,7 @@ import { FlynetDiscoveryClient, type models } from "@flynetdev/core";
 import { NearbyLocations, OpenHoursBadge } from "@flynetdev/react";
 
 export default async function Explore() {
-  const discovery = new FlynetDiscoveryClient({ apiKey: process.env.API_KEY! });
+  const discovery = new FlynetDiscoveryClient({ apiKey: process.env.FLYNET_API_KEY! });
 
   const { restaurants } = await discovery.restaurants.listRestaurants({ pageSize: 50 });
 
@@ -4465,7 +4476,7 @@ All three are Discovery routes: they take the API key, not an OAuth bearer.
 
 ```typescript theme={null}
 const base = "https://api.staging.blackbird.xyz/flynet/v1";
-const h = { "X-API-Key": process.env.API_KEY! };
+const h = { "X-API-Key": process.env.FLYNET_API_KEY! };
 
 // 1. Brand-level list for your discovery surface
 const restaurants = await (
@@ -4496,7 +4507,7 @@ console.log(hours.open_hours);
 
 ```bash theme={null}
 curl -sS "https://api.staging.blackbird.xyz/flynet/v1/restaurants?page=0&page_size=50" \
-  -H "X-API-Key: $API_KEY"
+  -H "X-API-Key: $FLYNET_API_KEY"
 ```
 
 <Warning>
@@ -4796,7 +4807,7 @@ Every 4xx / 5xx response carries either an `error_code` (in JSON envelopes) or a
 
 | Code                      | Where                                 | Cause                                                                                                                                                                 | Fix                                                                                                                                                                                                                                                                                                                                                   |
 | ------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <a />*(no body)*          | Any 401 (`WWW-Authenticate` header)   | No credential: missing `X-API-Key` on a Discovery route, or missing/blank `Authorization: Bearer` on a member route. The body is empty — the reason is in the header. | Add the right credential for the route family: `-H "X-API-Key: $API_KEY"` for `/restaurants*` + `/locations*`, `-H "Authorization: Bearer $TOKEN"` elsewhere.                                                                                                                                                                                         |
+| <a />*(no body)*          | Any 401 (`WWW-Authenticate` header)   | No credential: missing `X-API-Key` on a Discovery route, or missing/blank `Authorization: Bearer` on a member route. The body is empty — the reason is in the header. | Add the right credential for the route family: `-H "X-API-Key: $FLYNET_API_KEY"` for `/restaurants*` + `/locations*`, `-H "Authorization: Bearer $TOKEN"` elsewhere.                                                                                                                                                                                         |
 | <a />`invalid_api_key`    | Discovery 401 (JSON envelope A)       | Key expired, revoked, or wrong environment.                                                                                                                           | Confirm you're using the key you received for the environment you're calling. Don't try to use a staging key against production or vice versa; the prefix isn't a guarantee, but the server-side binding is. If the key is the right one and still rejected, request a fresh one via [Support](/resources/support).                                   |
 | <a />`invalid_token`      | OAuth 401 (`WWW-Authenticate` header) | Malformed JWT, expired, or signed by the wrong issuer.                                                                                                                | Refresh the token. If refresh also fails, restart the OAuth flow from [Step 1](/concepts/oauth).                                                                                                                                                                                                                                                      |
 | <a />`insufficient_scope` | **403** (`WWW-Authenticate` header)   | Token or key is valid but missing the scope this route needs. The route exists; this is not a 404.                                                                    | Re-authorize (or remint the key) with the required scope. OAuth: `read:profile` gates `/users/me` + `/users/me/status`; `read:user_checkins` gates `/users/me/check_ins`; `read:wallets` gates `/users/me/wallets`; `read:memberships` gates `/users/me/memberships`. API key: `read:checkins` gates the `/check_ins` venue feed + `/check_ins/{id}`. |
